@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="첨부 판매 데이터의 일별 거래, 결제수단, 구독할인 기록을 요약한 리포트입니다.">
+  <title>판매 데이터 리포트 | 거래 현황 요약</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --navy:#101d38; --navy-2:#1c3153; --amber:#f2b544; --paper:#f5f6f8;
+      --surface:#fff; --ink:#1e2433; --muted:#596579; --soft:#737d96; --line:#e2e6f0;
+      --blue:#1751D0; --orange:#E2661E; --aqua:#0E9E8F;
+      --shadow:0 8px 24px rgba(16,29,56,.045);
+    }
+    * { box-sizing:border-box; }
+    html { scroll-behavior:smooth; }
+    body { margin:0; background:var(--paper); color:var(--ink); font-family:system-ui,-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic","Nanum Gothic",sans-serif; line-height:1.6; word-break:keep-all; }
+    a { color:inherit; }
+    .shell { width:min(1140px, calc(100% - 40px)); margin:0 auto; }
+    .masthead { background:linear-gradient(120deg, #0d1830, #172c4e 76%, #20375d); color:#fff; padding:18px 0; }
+    .nav { display:flex; align-items:center; justify-content:space-between; gap:20px; }
+    .brand { display:flex; align-items:center; gap:10px; font-size:12px; font-weight:850; letter-spacing:.13em; }
+    .brand-mark { width:10px; height:10px; background:var(--amber); transform:rotate(45deg); border-radius:2px; }
+    .nav-links { display:flex; gap:22px; color:#d6deeb; font-size:12px; }
+    .nav-links a { text-decoration:none; }
+    .nav-links a:hover { color:var(--amber); }
+    .report-hero { background:linear-gradient(120deg, #0d1830, #172c4e 76%, #20375d); color:#fff; padding:42px 0 52px; }
+    .report-meta { display:flex; align-items:center; gap:10px; margin:0 0 14px; color:#f7c765; font-size:11px; font-weight:800; letter-spacing:.12em; text-transform:uppercase; }
+    .report-meta::before { content:""; width:22px; height:2px; background:var(--amber); }
+    h1 { margin:0; font-size:clamp(34px,5vw,54px); line-height:1.16; letter-spacing:-.05em; }
+    .hero-desc { max-width:720px; margin:14px 0 0; color:#d6deeb; font-size:15px; }
+    .period-chip { display:inline-flex; align-items:center; gap:9px; margin-top:23px; padding:8px 12px; border:1px solid rgba(255,255,255,.2); border-radius:7px; color:#eef2f7; font-size:12px; }
+    .period-chip b { color:var(--amber); font-size:10px; letter-spacing:.08em; }
+    main { padding:28px 0 55px; }
+    .kpis { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:14px; margin-top:-1px; }
+    .kpi { position:relative; overflow:hidden; padding:19px 21px; border:1px solid #e7e9ee; border-radius:12px; background:var(--surface); box-shadow:var(--shadow); }
+    .kpi::before { content:""; position:absolute; inset:0 auto 0 0; width:3px; background:var(--amber); }
+    .kpi-label { color:var(--muted); font-size:12px; font-weight:700; }
+    .kpi-value { display:flex; align-items:baseline; gap:7px; margin-top:7px; color:var(--navy); font-size:32px; font-weight:850; line-height:1.15; letter-spacing:-.045em; }
+    .kpi-value small { color:var(--soft); font-size:12px; font-weight:650; letter-spacing:0; }
+    .kpi-note { margin-top:5px; color:var(--soft); font-size:11px; }
+    .section-title { display:flex; align-items:end; justify-content:space-between; gap:16px; margin:35px 0 14px; }
+    .section-title h2 { margin:0; color:var(--navy); font-size:20px; letter-spacing:-.03em; }
+    .section-title p { margin:0; color:var(--soft); font-size:11px; }
+    .report-grid { display:grid; grid-template-columns:minmax(0,1.55fr) minmax(290px,.85fr); gap:16px; align-items:stretch; }
+    .panel { min-width:0; padding:21px; border:1px solid #e6e9ef; border-radius:13px; background:var(--surface); box-shadow:var(--shadow); }
+    .panel-head { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom:10px; }
+    .panel-title { margin:0; color:var(--navy); font-size:15px; font-weight:800; }
+    .panel-note { margin:3px 0 0; color:var(--soft); font-size:11px; }
+    .unit-badge { flex:0 0 auto; padding:5px 8px; border-radius:5px; background:#f4f6f9; color:var(--muted); font-size:10px; font-weight:750; }
+    .trend-chart { display:block; width:100%; height:auto; overflow:visible; margin-top:5px; }
+    .grid-line { stroke:#e2e6f0; stroke-width:1; }
+    .axis-label { fill:#737d96; font-size:10px; font-family:system-ui,sans-serif; }
+    .trend-line { fill:none; stroke:var(--blue); stroke-width:2.5; stroke-linecap:round; stroke-linejoin:round; }
+    .crosshair { stroke:#aab5ca; stroke-width:1; stroke-dasharray:3 4; opacity:0; }
+    .chart-point { outline:none; cursor:crosshair; }
+    .chart-point:hover .crosshair, .chart-point:focus .crosshair { opacity:1; }
+    .point-hit { fill:transparent; }
+    .point-dot { fill:var(--blue); stroke:#fff; stroke-width:2; }
+    .chart-point:hover .point-dot, .chart-point:focus .point-dot { r:6; }
+    .chart-caption { margin:1px 0 0; color:var(--soft); font-size:10px; }
+    .daily-details { margin-top:15px; border-top:1px solid var(--line); padding-top:11px; }
+    .daily-details summary { color:var(--muted); font-size:11px; font-weight:750; cursor:pointer; }
+    .table-scroll { max-height:220px; overflow:auto; margin-top:10px; }
+    table { width:100%; border-collapse:collapse; font-size:11px; }
+    th, td { padding:7px 9px; border-bottom:1px solid #eef0f4; text-align:left; }
+    td { color:var(--muted); text-align:right; }
+    .bar-chart { display:grid; gap:17px; margin-top:22px; }
+    .bar-row { display:grid; grid-template-columns:76px minmax(0,1fr) 43px; align-items:center; gap:10px; }
+    .bar-name { color:#505a74; font-size:11px; }
+    .bar-track { height:10px; overflow:hidden; border-radius:999px; background:#e2e6f0; }
+    .bar-fill { display:block; height:100%; border-radius:0 999px 999px 0; }
+    .pay-blue { background:var(--blue); } .pay-orange { background:var(--orange); } .pay-aqua { background:var(--aqua); }
+    .bar-number { color:var(--ink); font-size:12px; text-align:right; white-space:nowrap; }
+    .bar-number small { margin-left:2px; color:var(--soft); font-size:9px; font-weight:600; }
+    .chart-legend { display:flex; flex-wrap:wrap; gap:8px 15px; margin-top:23px; padding-top:13px; border-top:1px solid var(--line); color:var(--soft); font-size:10px; }
+    .chart-legend span { display:inline-flex; align-items:center; gap:6px; }
+    .legend-dot { width:7px; height:7px; border-radius:50%; }
+    .sub-panel { display:grid; grid-template-columns:1.05fr .95fr; gap:16px; margin-top:16px; }
+    .split-bar { display:flex; height:13px; overflow:hidden; margin:20px 0 14px; border-radius:99px; background:#e2e6f0; }
+    .split-n { width:67.4157%; background:var(--blue); } .split-y { width:32.5843%; background:var(--orange); }
+    .split-labels { display:flex; flex-wrap:wrap; gap:10px 18px; }
+    .split-label { display:flex; align-items:center; gap:7px; color:var(--muted); font-size:11px; }
+    .split-label strong { color:var(--ink); font-size:12px; }
+    .quality-card { border-left:3px solid var(--amber); background:#fffbf1; }
+    .quality-head { display:flex; align-items:center; gap:8px; margin-bottom:8px; color:#77500a; font-size:12px; font-weight:850; }
+    .quality-card p { margin:0; color:#5b513e; font-size:12px; }
+    .quality-card strong { color:var(--navy); }
+    .fields { display:flex; flex-wrap:wrap; gap:7px; margin-top:13px; }
+    .field-tag { padding:5px 8px; border:1px solid #e5e8ed; border-radius:6px; background:#fff; color:#596579; font-size:10px; }
+    .source-note { margin-top:27px; padding:14px 16px; border:1px solid #e4e7ed; border-radius:10px; background:#f9fafb; color:var(--muted); font-size:11px; }
+    .source-note strong { color:var(--navy); }
+    footer { padding:21px 0 25px; border-top:1px solid #e1e5eb; color:#737d96; font-size:10px; text-align:center; }
+    @media (max-width:800px) {
+      .report-grid { grid-template-columns:1fr; }
+      .sub-panel { grid-template-columns:1fr; }
+    }
+    @media (max-width:600px) {
+      .shell { width:min(100% - 28px, 1140px); }
+      .nav-links { gap:12px; font-size:10px; }
+      .report-hero { padding:34px 0 42px; }
+      .hero-desc { font-size:13px; }
+      .kpis { grid-template-columns:1fr; gap:9px; }
+      .kpi { padding:15px 17px; }
+      .kpi-value { font-size:27px; }
+      .section-title { align-items:flex-start; flex-direction:column; gap:4px; margin-top:29px; }
+      .panel { padding:17px; }
+      .bar-row { grid-template-columns:66px minmax(0,1fr) 40px; gap:8px; }
+      .axis-label { font-size:9px; }
+    }
+    @media (prefers-reduced-motion:reduce) { html { scroll-behavior:auto; } }
+  </style>
+</head>
+<body>
+  <header class="masthead">
+    <div class="shell nav">
+      <div class="brand"><span class="brand-mark" aria-hidden="true"></span>SALES DATA REPORT</div>
+      <nav class="nav-links" aria-label="보고서 목차">
+        <a href="#trend">거래 흐름</a><a href="#payment">결제수단</a><a href="#quality">데이터 안내</a>
+      </nav>
+    </div>
+  </header>
+  <section class="report-hero">
+    <div class="shell">
+      <p class="report-meta">판매 데이터 요약 리포트</p>
+      <h1>거래 현황을<br>한눈에 살펴보세요</h1>
+      <p class="hero-desc">일별 거래 건수와 결제수단, 구독할인 표시를 첨부된 판매 기록 기준으로 정리했습니다.</p>
+      <div class="period-chip"><b>RECORD PERIOD</b><span>2026.08.01 — 2026.08.28</span></div>
+    </div>
+  </section>
+
+  <main class="shell">
+    <section class="kpis" aria-label="핵심 요약">
+      <article class="kpi"><div class="kpi-label">거래 기록</div><div class="kpi-value">89<small>건</small></div><div class="kpi-note">첨부 CSV 행 기준</div></article>
+      <article class="kpi"><div class="kpi-label">데이터 항목</div><div class="kpi-value">8<small>개</small></div><div class="kpi-note">거래별 기록 필드</div></article>
+      <article class="kpi"><div class="kpi-label">수량 미입력</div><div class="kpi-value">3<small>건</small></div><div class="kpi-note">수량 값이 비어 있는 기록</div></article>
+    </section>
+
+    <div class="section-title"><h2>거래 흐름과 결제 현황</h2><p>기록 행을 기준으로 집계 · 매출액이 아닌 거래 건수</p></div>
+    <section class="report-grid" aria-label="거래 및 결제 분석">
+      <article class="panel" id="trend">
+        <div class="panel-head">
+          <div><h3 class="panel-title">일별 거래 건수</h3><p class="panel-note">날짜별 판매 기록 수</p></div>
+          <span class="unit-badge">단위: 건</span>
+        </div>
+        <svg class="trend-chart" viewBox="0 0 800 260" role="img" aria-labelledby="trend-svg-title trend-svg-desc" preserveAspectRatio="xMidYMid meet">
+  <title id="trend-svg-title">일별 거래 건수</title>
+  <desc id="trend-svg-desc">2026년 8월 1일부터 28일까지의 일별 거래 건수. 총 89건입니다.</desc>
+  <g aria-hidden="true"><line class="grid-line" x1="64" y1="206.0" x2="780" y2="206.0" /><text class="axis-label" x="48" y="210.0" text-anchor="end">0</text><line class="grid-line" x1="64" y1="147.3" x2="780" y2="147.3" /><text class="axis-label" x="48" y="151.3" text-anchor="end">2</text><line class="grid-line" x1="64" y1="88.7" x2="780" y2="88.7" /><text class="axis-label" x="48" y="92.7" text-anchor="end">4</text><line class="grid-line" x1="64" y1="30.0" x2="780" y2="30.0" /><text class="axis-label" x="48" y="34.0" text-anchor="end">6</text><text class="axis-label" x="64.0" y="231" text-anchor="middle">01일</text><text class="axis-label" x="170.1" y="231" text-anchor="middle">05일</text><text class="axis-label" x="276.1" y="231" text-anchor="middle">09일</text><text class="axis-label" x="382.2" y="231" text-anchor="middle">13일</text><text class="axis-label" x="488.3" y="231" text-anchor="middle">17일</text><text class="axis-label" x="594.4" y="231" text-anchor="middle">21일</text><text class="axis-label" x="700.4" y="231" text-anchor="middle">25일</text><text class="axis-label" x="780.0" y="231" text-anchor="middle">28일</text></g>
+  <polyline class="trend-line" points="64.0,88.7 90.5,118.0 117.0,88.7 143.6,88.7 170.1,118.0 196.6,118.0 223.1,147.3 249.6,147.3 276.1,88.7 302.7,88.7 329.2,176.7 355.7,147.3 382.2,59.3 408.7,147.3 435.3,118.0 461.8,88.7 488.3,176.7 514.8,118.0 541.3,147.3 567.9,59.3 594.4,88.7 620.9,88.7 647.4,88.7 673.9,88.7 700.4,118.0 727.0,147.3 753.5,88.7 780.0,118.0" />
+  <g class="chart-point" tabindex="0" role="img" aria-label="2026년 08월 01일: 4건"><line class="crosshair" x1="64.0" y1="30" x2="64.0" y2="206" /><circle class="point-hit" cx="64.0" cy="88.7" r="10"><title>2026년 08월 01일 · 4건</title></circle><circle class="point-dot" cx="64.0" cy="88.7" r="4.3" /></g><g class="chart-point" tabindex="0" role="img" aria-label="2026년 08월 02일: 3건"><line class="crosshair" x1="90.5" y1="30" x2="90.5" y2="206" /><circle class="point-hit" cx="90.5" cy="118.0" r="10"><title>2026년 08월 02일 · 3건</title></circle><circle class="point-dot" cx="90.5" cy="118.0" r="4.3" /></g><g class="chart-point" tabindex="0" role="img" aria-label="2026년 08월 03일: 4건"><line class="crosshair" x1="117.0" y1="30" x2="117.0" y2="206" /><circle class="point-hit" cx="117.0" cy="88.7" r="10"><title>2026년 08월 03일 · 4건</title></circle><circle class="point-dot" cx="117.0" cy="88.7" r="4.3" /></g><g class="chart-point" tabindex="0" role="img" aria-label="2026년 08월 04일: 4건"><line class="crosshair" x1="143.6" y1="30" x2="143.6" y2="206" /><circle class="point-hit" cx="143.6" cy="88.7" r="10"><title>2026년 08월 04일 · 4건</title></circle><circle class="point-dot" cx="143.6" cy="88.7" r="4.3" /></g><g class="chart-point" tabindex="0" role="img" aria-label="2026년 08월 05일: 3건"><line class="crosshair" x1="170.1" y1="30" x2="170.1" y2="206" /><circle class="point-hit" cx="170.1" cy="118.0" r="10"><title>2026년 08월 05일 · 3건</title></circle><circle class="point-dot" cx="170.1" cy="118.0" r="4.3" /></g><g class="chart-point" tabindex="0" role="img" aria-label="2026년 08월 06일: 3건"><line class="crosshair" x1="196.6" y1="30" x2="196.6" y2="206" /><circle class="point-hit" cx="196.6" cy="118.0" r="10"><title>2026년 08월 06일 · 3건</title></circle><circle class="point-dot" cx="196.6" cy="118.0" r="4.3" /></g><g class="chart-point" tabindex="0" role="img" aria-label="2026년 08월 07일: 2건"><line class="crosshair" x1="223.1" y1="30" x2="223.1" y2="206" /><circle class="point-hit" cx="223.1" cy="147.3" r="10"><title>2026년 08월 07일 · 2건</title></circle><circle class="point-dot" cx="223.1" cy="147.3" r="4.3" /></g><g class="chart-point" tabindex="0" role="img" aria-label="2026년 08월 08일: 2건"><line class="crosshair" x1="249.6" y1="30" x2="249.6" y2="206" /><circle class="point-hit" cx="249.6" cy="147.3" r="10"><title>2026년 08월 08일 · 2건</title></circle><circle class="point-dot" cx="249.6" cy="147.3" r="4.3" /></g><g class="chart-point" tabindex="0" role="img" aria-label="2026년 08월 09일: 4건"><line class="crosshair" x1="276.1" y1="30" x2="276.1" y2="206" /><circle class="point-hit" cx="276.1" cy="88.7" r="10"><title>2026년 08월 09일 · 4건</title></circle><circle class="point-dot" cx="276.1" cy="88.7" r="4.3" /></g><g class="chart-point" tabindex="0" role="img" aria-label="2026년 08월 10일: 4건"><line class="crosshair" x1="302.7" y1="30" x2="302.7" y2="206" /><circle class="point-hit" cx="302.7" cy="88.7" r="10"><title>2026년 08월 10일 · 4건</title></circle><circle class="point-dot" cx="302.7" cy="88.7" r="4.3" /></g><g class="chart-point" tabindex="0" role="img" aria-label="2026년 08월 11일: 1건"><line class="crosshair" x1="329.2" y1="30" x2="329.2" y2="206" /><circle class="point-hit" cx="329.2" cy="176.7" r="10"><title>2026년 08월 11일 · 1건</title></circle><circle class="point-dot" cx="329.2" cy="176.7" r="4.3" /></g><g class="chart-point" tabindex="0" role="img" aria-label="2026년 08월 12일: 2건"><line class="crosshair" x1="355.7" y1="30" x2="355.7" y2="206" /><circle class="point-hit" cx="355.7" cy="147.3" r="10"><title>2026년 08월 12일 · 2건</title></circle><circle class="point-dot" cx="355.7" cy="147.3" r="4.3" /></g><g class="chart-point" tabindex="0" role="img" aria-label="2026년 08월 13일: 5건"><line class="crosshair" x1="382.2" y1="30" x2="382.2" y2="206" /><circle class="point-hit" cx="382.2" cy="59.3" r="10"><title>2026년 08월 13일 · 5건</title></circle><circle class="point-dot" cx="382.2" cy="59.3" r="4.3" /></g><g class="chart-point" tabindex="0" role="img" aria-label="2026년 08월 14일: 2건"><line class="crosshair" x1="408.7" y1="30" x2="408.7" y2="206" /><circle class="point-hit" cx="408.7" cy="147.3" r="10"><title>2026년 08월 14일 · 2건</title></circle><circle class="point-dot" cx="408.7" cy="147.3" r="4.3" /></g><g class="chart-point" tabindex="0" role="img" aria-label="2026년 08월 15일: 3건"><line class="crosshair" x1="435.3" y1="30" x2="435.3" y2="206" /><circle class="point-hit" cx="435.3" cy="118.0" r="10"><title>2026년 08월 15일 · 3건</title></circle><circle class="point-dot" cx="435.3" cy="118.0" r="4.3" /></g><g class="chart-point" tabindex="0" role="img" aria-label="2026년 08월 16일: 4건"><line class="crosshair" x1="461.8" y1="30" x2="461.8" y2="206" /><circle class="point-hit" cx="461.8" cy="88.7" r="10"><title>2026년 08월 16일 · 4건</title></circle><circle class="point-dot" cx="461.8" cy="88.7" r="4.3" /></g><g class="chart-point" tabindex="0" role="img" aria-label="2026년 08월 17일: 1건"><line class="crosshair" x1="488.3" y1="30" x2="488.3" y2="206" /><circle class="point-hit" cx="488.3" cy="176.7" r="10"><title>2026년 08월 17일 · 1건</title></circle><circle class="point-dot" cx="488.3" cy="176.7" r="4.3" /></g><g class="chart-point" tabindex="0" role="img" aria-label="2026년 08월 18일: 3건"><line class="crosshair" x1="514.8" y1="30" x2="514.8" y2="206" /><circle class="point-hit" cx="514.8" cy="118.0" r="10"><title>2026년 08월 18일 · 3건</title></circle><circle class="point-dot" cx="514.8" cy="118.0" r="4.3" /></g><g class="chart-point" tabindex="0" role="img" aria-label="2026년 08월 19일: 2건"><line class="crosshair" x1="541.3" y1="30" x2="541.3" y2="206" /><circle class="point-hit" cx="541.3" cy="147.3" r="10"><title>2026년 08월 19일 · 2건</title></circle><circle class="point-dot" cx="541.3" cy="147.3" r="4.3" /></g><g class="chart-point" tabindex="0" role="img" aria-label="2026년 08월 20일: 5건"><line class="crosshair" x1="567.9" y1="30" x2="567.9" y2="206" /><circle class="point-hit" cx="567.9" cy="59.3" r="10"><title>2026년 08월 20일 · 5건</title></circle><circle class="point-dot" cx="567.9" cy="59.3" r="4.3" /></g><g class="chart-point" tabindex="0" role="img" aria-label="2026년 08월 21일: 4건"><line class="crosshair" x1="594.4" y1="30" x2="594.4" y2="206" /><circle class="point-hit" cx="594.4" cy="88.7" r="10"><title>2026년 08월 21일 · 4건</title></circle><circle class="point-dot" cx="594.4" cy="88.7" r="4.3" /></g><g class="chart-point" tabindex="0" role="img" aria-label="2026년 08월 22일: 4건"><line class="crosshair" x1="620.9" y1="30" x2="620.9" y2="206" /><circle class="point-hit" cx="620.9" cy="88.7" r="10"><title>2026년 08월 22일 · 4건</title></circle><circle class="point-dot" cx="620.9" cy="88.7" r="4.3" /></g><g class="chart-point" tabindex="0" role="img" aria-label="2026년 08월 23일: 4건"><line class="crosshair" x1="647.4" y1="30" x2="647.4" y2="206" /><circle class="point-hit" cx="647.4" cy="88.7" r="10"><title>2026년 08월 23일 · 4건</title></circle><circle class="point-dot" cx="647.4" cy="88.7" r="4.3" /></g><g class="chart-point" tabindex="0" role="img" aria-label="2026년 08월 24일: 4건"><line class="crosshair" x1="673.9" y1="30" x2="673.9" y2="206" /><circle class="point-hit" cx="673.9" cy="88.7" r="10"><title>2026년 08월 24일 · 4건</title></circle><circle class="point-dot" cx="673.9" cy="88.7" r="4.3" /></g><g class="chart-point" tabindex="0" role="img" aria-label="2026년 08월 25일: 3건"><line class="crosshair" x1="700.4" y1="30" x2="700.4" y2="206" /><circle class="point-hit" cx="700.4" cy="118.0" r="10"><title>2026년 08월 25일 · 3건</title></circle><circle class="point-dot" cx="700.4" cy="118.0" r="4.3" /></g><g class="chart-point" tabindex="0" role="img" aria-label="2026년 08월 26일: 2건"><line class="crosshair" x1="727.0" y1="30" x2="727.0" y2="206" /><circle class="point-hit" cx="727.0" cy="147.3" r="10"><title>2026년 08월 26일 · 2건</title></circle><circle class="point-dot" cx="727.0" cy="147.3" r="4.3" /></g><g class="chart-point" tabindex="0" role="img" aria-label="2026년 08월 27일: 4건"><line class="crosshair" x1="753.5" y1="30" x2="753.5" y2="206" /><circle class="point-hit" cx="753.5" cy="88.7" r="10"><title>2026년 08월 27일 · 4건</title></circle><circle class="point-dot" cx="753.5" cy="88.7" r="4.3" /></g><g class="chart-point" tabindex="0" role="img" aria-label="2026년 08월 28일: 3건"><line class="crosshair" x1="780.0" y1="30" x2="780.0" y2="206" /><circle class="point-hit" cx="780.0" cy="118.0" r="10"><title>2026년 08월 28일 · 3건</title></circle><circle class="point-dot" cx="780.0" cy="118.0" r="4.3" /></g>
+</svg>
+        <p class="chart-caption">각 점에 마우스를 올리거나 키보드로 선택하면 날짜별 수를 확인할 수 있습니다.</p>
+        <details class="daily-details">
+          <summary>일별 집계표 펼쳐 보기</summary>
+          <div class="table-scroll"><table><thead><tr><th scope="col">날짜</th><th scope="col">거래 건수</th></tr></thead><tbody><tr><th scope="row">2026-08-01</th><td>4건</td></tr><tr><th scope="row">2026-08-02</th><td>3건</td></tr><tr><th scope="row">2026-08-03</th><td>4건</td></tr><tr><th scope="row">2026-08-04</th><td>4건</td></tr><tr><th scope="row">2026-08-05</th><td>3건</td></tr><tr><th scope="row">2026-08-06</th><td>3건</td></tr><tr><th scope="row">2026-08-07</th><td>2건</td></tr><tr><th scope="row">2026-08-08</th><td>2건</td></tr><tr><th scope="row">2026-08-09</th><td>4건</td></tr><tr><th scope="row">2026-08-10</th><td>4건</td></tr><tr><th scope="row">2026-08-11</th><td>1건</td></tr><tr><th scope="row">2026-08-12</th><td>2건</td></tr><tr><th scope="row">2026-08-13</th><td>5건</td></tr><tr><th scope="row">2026-08-14</th><td>2건</td></tr><tr><th scope="row">2026-08-15</th><td>3건</td></tr><tr><th scope="row">2026-08-16</th><td>4건</td></tr><tr><th scope="row">2026-08-17</th><td>1건</td></tr><tr><th scope="row">2026-08-18</th><td>3건</td></tr><tr><th scope="row">2026-08-19</th><td>2건</td></tr><tr><th scope="row">2026-08-20</th><td>5건</td></tr><tr><th scope="row">2026-08-21</th><td>4건</td></tr><tr><th scope="row">2026-08-22</th><td>4건</td></tr><tr><th scope="row">2026-08-23</th><td>4건</td></tr><tr><th scope="row">2026-08-24</th><td>4건</td></tr><tr><th scope="row">2026-08-25</th><td>3건</td></tr><tr><th scope="row">2026-08-26</th><td>2건</td></tr><tr><th scope="row">2026-08-27</th><td>4건</td></tr><tr><th scope="row">2026-08-28</th><td>3건</td></tr></tbody></table></div>
+        </details>
+      </article>
+
+      <article class="panel" id="payment">
+        <div class="panel-head">
+          <div><h3 class="panel-title">결제수단별 거래 건수</h3><p class="panel-note">막대 길이는 최대 항목을 기준으로 비교</p></div>
+          <span class="unit-badge">단위: 건</span>
+        </div>
+        <div class="bar-chart" role="img" aria-label="카드 37건, 간편결제 29건, 현금 23건">
+          <div class="bar-row" aria-label="카드 37건"><span class="bar-name">카드</span><span class="bar-track"><span class="bar-fill pay-blue" style="width:100.0%"></span></span><strong class="bar-number">37<small>건</small></strong></div><div class="bar-row" aria-label="간편결제 29건"><span class="bar-name">간편결제</span><span class="bar-track"><span class="bar-fill pay-orange" style="width:78.4%"></span></span><strong class="bar-number">29<small>건</small></strong></div><div class="bar-row" aria-label="현금 23건"><span class="bar-name">현금</span><span class="bar-track"><span class="bar-fill pay-aqua" style="width:62.2%"></span></span><strong class="bar-number">23<small>건</small></strong></div>
+        </div>
+        <div class="chart-legend" aria-label="결제수단 범례">
+          <span><i class="legend-dot pay-blue"></i>카드</span><span><i class="legend-dot pay-orange"></i>간편결제</span><span><i class="legend-dot pay-aqua"></i>현금</span>
+        </div>
+      </article>
+    </section>
+
+    <div class="section-title"><h2>구독할인 표시와 데이터 상태</h2><p>원본에 기록된 값 그대로</p></div>
+    <section class="sub-panel" id="quality" aria-label="할인 표시 및 데이터 상태">
+      <article class="panel">
+        <div class="panel-head">
+          <div><h3 class="panel-title">구독할인 표시</h3><p class="panel-note">구독할인 열의 Y / N 건수</p></div>
+          <span class="unit-badge">총 89건</span>
+        </div>
+        <div class="split-bar" role="img" aria-label="구독할인 N 60건, Y 29건">
+          <span class="split-n"></span><span class="split-y"></span>
+        </div>
+        <div class="split-labels">
+          <span class="split-label"><i class="legend-dot pay-blue"></i>N 미표시 <strong>60건</strong></span>
+          <span class="split-label"><i class="legend-dot pay-orange"></i>Y 표시 <strong>29건</strong></span>
+        </div>
+      </article>
+      <article class="panel quality-card">
+        <div class="quality-head">데이터 확인 메모</div>
+        <p>수량이 비어 있는 기록이 <strong>3건</strong> 있습니다. 이 보고서는 해당 값을 임의로 보정하지 않고, 거래 건수 중심으로 정리했습니다.</p>
+        <div class="fields" aria-label="CSV 포함 항목"><span class="field-tag">거래ID</span><span class="field-tag">날짜</span><span class="field-tag">상품명</span><span class="field-tag">카테고리</span><span class="field-tag">단가</span><span class="field-tag">수량</span><span class="field-tag">결제수단</span><span class="field-tag">구독할인</span></div>
+      </article>
+    </section>
+
+    <aside class="source-note"><strong>집계 기준:</strong> 첨부 CSV 89개 행을 대상으로 날짜별 거래 수, 결제수단별 건수, 구독할인 Y/N 건수를 집계했습니다. 매출 합계는 이 보고서에서 제시하지 않습니다.</aside>
+  </main>
+  <footer class="shell">첨부 판매 데이터 기준 리포트 · 표시된 수치는 원본 기록의 건수 집계입니다.</footer>
+</body>
+</html>
